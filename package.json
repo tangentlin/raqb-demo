@@ -16,6 +16,7 @@
     "@react-awesome-query-builder/core": "^6.6.12",
     "@react-awesome-query-builder/mui": "^6.6.12",
     "@react-awesome-query-builder/ui": "^6.6.12",
+    "immer": "^10.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
