@@ -15,15 +15,16 @@ import {
 import { MuiConfig } from "@react-awesome-query-builder/mui";
 import "@react-awesome-query-builder/mui/css/styles.css";
 import { produce } from "immer";
-import { styled } from '@mui/material/styles'
-import { Typography } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { Stack, Typography } from "@mui/material";
 // or import '@react-awesome-query-builder/ui/css/compact_styles.css';
 const InitialConfig = MuiConfig;
 // <<<
 
 // You need to provide your own config. See below 'Config format'
 
-const StyledQueryBuilder = styled('div')`
+const StyledQueryBuilder = styled("div")`
+  width: 560px;
   .query-builder {
     .group {
       .group--header {
@@ -151,45 +152,52 @@ export const SimpleQueryBuilder: React.FC = () => {
     []
   );
 
-  const renderBuilder = useCallback(
-    (props: BuilderProps) => { 
-      const builderConfig: Config = {
-        ...props.config,
-      }
+  const renderBuilder = useCallback((props: BuilderProps) => {
+    const builderConfig: Config = {
+      ...props.config,
+    };
 
-      return (
+    return (
       <div className="query-builder-container" style={{ padding: "10px" }}>
         <div className="query-builder qb-lite">
           <Builder {...props} config={builderConfig} />
         </div>
       </div>
-    )},
-    []
-  );
+    );
+  }, []);
 
   return (
-    <StyledQueryBuilder>
+    <Stack spacing={2}>
       <Typography variant="h4">Simple Query Builder</Typography>
-      <Query
-        {...config}
-        value={state.tree}
-        onChange={onChange}
-        renderBuilder={renderBuilder}
-      />
-      <div className="query-builder-result">
-        <div>
-          Query string:{" "}
-          <pre>
-            {JSON.stringify(QbUtils.queryString(state.tree, state.config))}
-          </pre>
-        </div>
-        <div>
-          JsonLogic:{" "}
-          <pre>
-            {JSON.stringify(QbUtils.jsonLogicFormat(state.tree, state.config))}
-          </pre>
-        </div>
-      </div>
-    </StyledQueryBuilder>
+      <Typography>
+        This is a simple query builder with minimal configuration. More
+        customization would be needed to fit the UI in a narrower space than the
+        current 560px setting.
+      </Typography>
+      <StyledQueryBuilder>
+        <Query
+          {...config}
+          value={state.tree}
+          onChange={onChange}
+          renderBuilder={renderBuilder}
+        />
+        <Typography component={'div'}>
+          <div>
+            Query string:{" "}
+            <pre>
+              {JSON.stringify(QbUtils.queryString(state.tree, state.config))}
+            </pre>
+          </div>
+          <div>
+            JsonLogic:{" "}
+            <pre>
+              {JSON.stringify(
+                QbUtils.jsonLogicFormat(state.tree, state.config)
+              )}
+            </pre>
+          </div>
+        </Typography>
+      </StyledQueryBuilder>
+    </Stack>
   );
 };
