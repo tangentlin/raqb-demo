@@ -6,6 +6,7 @@ import type {
   Config,
   ImmutableTree,
   BuilderProps,
+  JsonLogicResult,
 } from "@react-awesome-query-builder/ui";
 import {
   Utils as QbUtils,
@@ -24,23 +25,53 @@ const InitialConfig = MuiConfig;
 // You need to provide your own config. See below 'Config format'
 
 const StyledQueryBuilder = styled("div")`
-  width: 560px;
-  .query-builder {
-    .group {
-      .group--header {
-        .group--actions {
-          // Always show actions
-          opacity: 1;
-        }
+// Temporarily set to 420px to avoid horizontal scrolling
+min-width: 420px;
+box-sizing: border-box;
+
+.query-builder {
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  box-sizing: border-box;
+
+  .group-or-rule-container {
+    padding-right: 0;
+  }
+
+  .group {
+    background: none;
+    border: none;
+    .group--header {
+      &::before {
+        // Remove tree line
+        display: none;
       }
-      .rule {
-        .rule--header {
-          // Always show actions
-          opacity: 1;
-        }
+    }
+    .group--conjunctions {
+      // Always hide conjunctions
+      display: none;
+    }
+    .rule {
+      &::before,
+      &::after {
+        // Remove tree line
+        display: none;
       }
     }
   }
+`;
+
+const Code = styled("pre")`
+  width: 90%;
+  background-color: ${(props) => props.theme.palette.grey[100]};
+  padding: ${(props) => props.theme.spacing(1)};
+  max-height: ${(props) => props.theme.spacing(30)};
+  font-size: 80%;
+  overflow: auto;
 `;
 
 const config: Config = produce(InitialConfig, (draft) => {
@@ -88,15 +119,63 @@ const config: Config = produce(InitialConfig, (draft) => {
       },
     },
     is_promotion: {
-      label: "Promo?",
+      label: "Promo",
       type: "boolean",
       operators: ["equal"],
+      valueSources: ["value"],
+    },
+    manufacture_date: {
+      label: "Manufacture Date",
+      type: "date",
       valueSources: ["value"],
     },
   };
 });
 
 // You can load query value from your backend storage (for saving see `Query.onChange()`)
+
+const querySpel =
+  "(price >= 30 && price <= 100 && color == 'green' && manufacture_date >= T(java.time.LocalDate).parse('2021-02-26', T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd')) && manufacture_date <= T(java.time.LocalDate).parse('2025-02-26', T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd')))";
+
+const jsonLogic: JsonLogicResult = {
+  errors: [],
+  logic: {
+    and: [
+      {
+        "<=": [
+          30,
+          {
+            var: "price",
+          },
+          100,
+        ],
+      },
+      {
+        "==": [
+          {
+            var: "color",
+          },
+          "green",
+        ],
+      },
+      {
+        "<=": [
+          "2025-02-01T05:00:00.000Z",
+          {
+            var: "manufacture_date",
+          },
+          "2025-02-28T05:00:00.000Z",
+        ],
+      },
+    ],
+  },
+  data: {
+    price: null,
+    color: null,
+    manufacture_date: null,
+  },
+};
+
 const queryValue: JsonGroup = {
   id: QbUtils.uuid(),
   type: "group",
@@ -132,7 +211,7 @@ const queryValue: JsonGroup = {
 
 export const SimpleQueryBuilder: React.FC = () => {
   const [state, setState] = useState({
-    tree: QbUtils.loadTree(queryValue),
+    tree: QbUtils.loadFromJsonLogic(jsonLogic.logic, config)!,
     config: config,
   });
 
@@ -153,14 +232,10 @@ export const SimpleQueryBuilder: React.FC = () => {
   );
 
   const renderBuilder = useCallback((props: BuilderProps) => {
-    const builderConfig: Config = {
-      ...props.config,
-    };
-
     return (
       <div className="query-builder-container" style={{ padding: "10px" }}>
-        <div className="query-builder qb-lite">
-          <Builder {...props} config={builderConfig} />
+        <div className="query-builder">
+          <Builder {...props} />
         </div>
       </div>
     );
@@ -181,20 +256,31 @@ export const SimpleQueryBuilder: React.FC = () => {
           onChange={onChange}
           renderBuilder={renderBuilder}
         />
-        <Typography component={'div'}>
+        <Typography component={"div"}>
           <div>
             Query string:{" "}
-            <pre>
+            <Code>
               {JSON.stringify(QbUtils.queryString(state.tree, state.config))}
-            </pre>
+            </Code>
           </div>
           <div>
-            JsonLogic:{" "}
-            <pre>
+            JsonLogic (
+            {JSON.stringify(
+              QbUtils.jsonLogicFormat(state.tree, state.config).logic
+            ).length.toLocaleString()}{" "}
+            bytes):{" "}
+            <Code>
               {JSON.stringify(
-                QbUtils.jsonLogicFormat(state.tree, state.config)
+                QbUtils.jsonLogicFormat(state.tree, state.config),
+                null,
+                2
               )}
-            </pre>
+            </Code>
+          </div>
+
+          <div>
+            Raw Tree:{" "}
+            <Code>{JSON.stringify(QbUtils.getTree(state.tree), null, 2)}</Code>
           </div>
         </Typography>
       </StyledQueryBuilder>
